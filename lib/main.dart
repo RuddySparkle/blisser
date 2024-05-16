@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         locale: DevicePreview.locale(context),
         builder: DevicePreview.appBuilder,
-        title: 'Blisser v0.1.0',
+        title: 'Blisser v0.2.0',
         themeMode: ThemeMode.system,
         theme: ThemeData(
           fontFamily: 'LibreBaskerville',

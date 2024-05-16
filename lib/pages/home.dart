@@ -1,9 +1,11 @@
+import 'package:blisser/api/products.dart';
 import 'package:blisser/models/category_model.dart';
-import 'package:blisser/models/cloth_model.dart';
+import 'package:blisser/models/product_model.dart';
 import 'package:blisser/pages/account.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,10 +17,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<CategoryModel> categories = [];
-  List<ClothModel> clothes = [];
+  late Future<List<ProductModel>> _productFuture;
   void _getData() {
     categories = CategoryModel.getCategories();
-    clothes = ClothModel.getClothes();
+    _productFuture = fetchAllProducts();
+    print(_productFuture);
   }
 
   @override
@@ -81,100 +84,113 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Column _products() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 20),
-          child: Text(
-            'Popular Products',
-            style: TextStyle(
-                color: Colors.black, fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-        ),
-        const SizedBox(
-          height: 15,
-        ),
-        ListView.separated(
-          itemCount: clothes.length,
-          shrinkWrap: true,
-          separatorBuilder: (context, index) => const SizedBox(
-            height: 25,
-          ),
-          padding: const EdgeInsets.only(left: 20, right: 20),
-          itemBuilder: (context, index) {
-            return InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () => {},
-                splashColor: Colors.white10,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 1,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  height: 140,
-                  padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Image.network(
-                        clothes[index].picturePath,
-                        fit: BoxFit.contain,
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            clothes[index].name,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                                fontSize: 18),
-                          ),
-                          Row(
-                            children: [
-                              for (var color in clothes[index].availableColor)
-                                Container(
-                                  margin: const EdgeInsets.fromLTRB(0, 0, 4, 3),
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    color: Color(int.parse(color)),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: Colors.grey.withOpacity(0.3),
-                                        width: 1),
-                                  ),
+  Widget _products() {
+    return Expanded(
+      child: FutureBuilder<List<ProductModel>>(
+        future: _productFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: SpinKitFadingCircle(
+                color: Colors.blue,
+                size: 50.0,
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return const Center(
+              child: SpinKitDualRing(
+                color: Colors.blue,
+                size: 30.0,
+              ),
+            );
+            // return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No products available'));
+          } else {
+            return _buildProductList(snapshot.data!);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildProductList(List<ProductModel> products) {
+    return ListView.separated(
+      itemCount: products.length,
+      padding: const EdgeInsets.only(left: 20, right: 20),
+      separatorBuilder: (context, index) => const SizedBox(height: 25),
+      itemBuilder: (context, index) {
+        return InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {},
+          splashColor: Colors.white10,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 1,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            height: 140,
+            padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Image.network(
+                  'https://down-th.img.susercontent.com/file/th-11134207-7r98z-ltl9tn858hu07f',
+                  fit: BoxFit.contain,
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      products[index].name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          fontSize: 18),
+                    ),
+                    Row(
+                      children: products[index]
+                          .availableColors
+                          .map((color) => Container(
+                                margin: const EdgeInsets.fromLTRB(0, 0, 4, 3),
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: Color(int.parse(color)),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.grey.withOpacity(0.3),
+                                      width: 1),
                                 ),
-                            ],
-                          ),
-                          Text(
-                            clothes[index].price,
-                            style: const TextStyle(
-                                color: Color(0xff7B6F72),
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      GestureDetector(
-                          onTap: () {},
-                          child: const Icon(Icons.arrow_forward_ios_rounded))
-                    ],
-                  ),
-                ));
-          },
-        )
-      ],
+                              ))
+                          .toList(),
+                    ),
+                    Text(
+                      'THB ${products[index].price.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          color: Color(0xff7B6F72),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () {},
+                  child: const Icon(Icons.arrow_forward_ios_rounded),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
